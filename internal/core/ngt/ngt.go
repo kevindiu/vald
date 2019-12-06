@@ -355,6 +355,7 @@ func (n *ngt) BulkInsert(vecs [][]float64) ([]uint32, error) {
 	n.mu.Lock()
 	ok := bool(C.ngt_batch_insert_index(n.index, (*C.float)(unsafe.Pointer(&vecs[0])), C.uint32_t(len(vecs)), (*C.uint32_t)(&ids[0]), n.ebuf))
 	n.mu.Unlock()
+	_ = vecs
 	if !ok {
 		return nil, n.newGoError(n.ebuf)
 	}
