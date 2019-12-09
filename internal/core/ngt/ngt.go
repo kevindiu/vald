@@ -27,9 +27,11 @@ import (
 	"os"
 	"reflect"
 	"sync"
+	"time"
 	"unsafe"
 
 	"github.com/vdaas/vald/internal/errors"
+	"github.com/vdaas/vald/internal/log"
 )
 
 type (
@@ -351,11 +353,22 @@ func (n *ngt) InsertCommit(vec []float64, poolSize uint32) (uint, error) {
 // BulkInsert returns NGT object ids.
 // This only stores not indexing, you must call CreateIndex and SaveIndex.
 func (n *ngt) BulkInsert(vecs [][]float64) ([]uint32, error) {
+	vs := make([]float32, 0, len(vecs)*len(vecs[0]))
+
+	for _, vec := range vecs {
+		for _, v := range vec {
+			vs = append(vs, float32(v))
+		}
+	}
+
 	ids := make([]uint32, len(vecs))
+	now := time.Now()
 	n.mu.Lock()
-	ok := bool(C.ngt_batch_insert_index(n.index, (*C.float)(unsafe.Pointer(&vecs[0])), C.uint32_t(len(vecs)), (*C.uint32_t)(&ids[0]), n.ebuf))
+	// ok := bool(C.ngt_batch_insert_index(n.index, (*C.float)(unsafe.Pointer(&vecs[0][0])), C.uint32_t(len(vecs)), (*C.uint32_t)(&ids[0]), n.ebuf))
+	ok := bool(C.ngt_batch_insert_index(n.index, (*C.float)(&vs[0]), C.uint32_t(len(vecs)), (*C.uint32_t)(&ids[0]), n.ebuf))
 	n.mu.Unlock()
-	_ = vecs
+	log.Debug(time.Since(now))
+	_ = vs
 	if !ok {
 		return nil, n.newGoError(n.ebuf)
 	}

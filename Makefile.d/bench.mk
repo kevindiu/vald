@@ -39,12 +39,20 @@ bench/core: \
 ## run benchmark for NGT core
 bench/core/ngt: \
 	bench/core/ngt/sequential \
+	bench/core/ngt/bulk \
     bench/core/ngt/parallel
 
 .PHONY: bench/core/ngt/sequential
 ## run benchmark for NGT core sequential methods
 bench/core/ngt/sequential:
 	$(call bench-pprof,pprof/core/ngt,core,NGTSequential,ngt,\
+    		./hack/benchmark/core/ngt/ngt_bench_test.go \
+    		-dataset=$(DATASET_ARGS))
+
+.PHONY: bench/core/ngt/bulk
+## run benchmark for NGT core bulk methods
+bench/core/ngt/bulk:
+	$(call bench-pprof,pprof/core/ngt,core,NGTBulk,ngt,\
     		./hack/benchmark/core/ngt/ngt_bench_test.go \
     		-dataset=$(DATASET_ARGS))
 
