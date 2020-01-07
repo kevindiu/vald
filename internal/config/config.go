@@ -27,7 +27,11 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
-// New returns config struct or error when decode the configuration file to actually *Config struct.
+const (
+	envVarIndicator = "_"
+)
+
+// Read reads the file located in path and decode the corresponding yaml or json file to cfg struct.
 func Read(path string, cfg interface{}) error {
 	f, err := os.OpenFile(path, os.O_RDONLY, 0600)
 	if err != nil {
@@ -44,30 +48,29 @@ func Read(path string, cfg interface{}) error {
 
 // GetActualValue returns the environment variable value if the val has prefix and suffix "_", otherwise the val will directly return.
 func GetActualValue(val string) string {
-	if checkPrefixAndSuffix(val, "_", "_") {
+	if isEnvVar(val) {
 		return os.ExpandEnv(os.Getenv(strings.TrimPrefix(strings.TrimSuffix(val, "_"), "_")))
 	}
 	return os.ExpandEnv(val)
 }
 
+// GetActualValues is the same as GetActualValue, but it process a string slice.
 func GetActualValues(vals []string) []string {
+	result := make([]string, len(vals))
 	for i, val := range vals {
-		if checkPrefixAndSuffix(val, "_", "_") {
-			vals[i] = os.ExpandEnv(os.Getenv(strings.TrimPrefix(strings.TrimSuffix(val, "_"), "_")))
-		} else {
-			vals[i] = os.ExpandEnv(val)
-		}
+		result[i] = GetActualValue(val)
 	}
-	return vals
+	return result
 }
 
-// checkPrefixAndSuffix checks if the str has prefix and suffix
-func checkPrefixAndSuffix(str, pref, suf string) bool {
-	return strings.HasPrefix(str, pref) && strings.HasSuffix(str, suf)
-}
-
+// ToRawYaml returns the encoded yaml string from the data.
 func ToRawYaml(data interface{}) string {
 	buf := bytes.NewBuffer(nil)
 	yaml.NewEncoder(buf).Encode(data)
 	return buf.String()
+}
+
+// isEnvVar returns if the str contains "_" prefix and suffix.
+func isEnvVar(str string) bool {
+	return strings.HasPrefix(str, envVarIndicator) && strings.HasSuffix(str, envVarIndicator)
 }
